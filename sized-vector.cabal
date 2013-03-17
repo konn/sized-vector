@@ -8,6 +8,7 @@ description:         Size-parameterized vector types and functions using a data-
 homepage:            https://github.com/konn/sized-vector
 license:             BSD3
 license-file:        LICENSE
+extra-source-files:  README.md
 author:              Hiromi ISHII
 maintainer:          konn.jinro_at_gmail.com
 copyright:           (C) Hiromi ISHII 2013
