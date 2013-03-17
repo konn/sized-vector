@@ -1,11 +1,15 @@
 {-# LANGUAGE DataKinds, GADTs, MultiParamTypeClasses, PolyKinds #-}
 {-# LANGUAGE StandaloneDeriving, TypeFamilies, TypeOperators    #-}
 -- | Size-parameterized vector types and functions.
-module Data.Vector.Sized where
+module Data.Vector.Sized ( Vector (..), sLength, length, append, foldr
+                         , foldl, singleton, zipWith, zipWithSame, toList, fromList
+                         , unsafeFromList, fromList', unsafeFromList'
+                         , all, splitAt, drop, take, map, head, tail) where
 import Control.Applicative
 import Data.Maybe
 import Data.Type.Natural
-import Prelude             hiding (map, foldl, foldr, head, splitAt, tail, zipWith, take)
+import Prelude             hiding (all, drop, foldl, foldr, head, length, map,
+                            splitAt, tail, take, zipWith)
 
 data Vector (a :: *) (n :: Nat)  where
   Nil  :: Vector a Z
