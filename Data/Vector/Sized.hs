@@ -10,6 +10,7 @@ import Data.Maybe
 import Data.Type.Natural
 import Prelude             hiding (all, drop, foldl, foldr, head, length, map,
                             splitAt, tail, take, zipWith)
+import Data.Singletons
 
 data Vector (a :: *) (n :: Nat)  where
   Nil  :: Vector a Z
@@ -67,10 +68,10 @@ fromList _      _      = Nothing
 unsafeFromList :: SNat n -> [a] -> Vector a n
 unsafeFromList len = fromMaybe (error "Length too short") . fromList len
 
-fromList' :: Sing n => [a] -> Maybe (Vector a n)
+fromList' :: SingRep n => [a] -> Maybe (Vector a n)
 fromList' = fromList sing
 
-unsafeFromList' :: Sing n => [a] -> Vector a n
+unsafeFromList' :: SingRep n => [a] -> Vector a n
 unsafeFromList' = unsafeFromList sing
 
 all :: (a -> Bool) -> Vector a n -> Bool
