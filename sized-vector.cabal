@@ -20,6 +20,8 @@ source-repository head
   Location: git://github.com/konn/sized-vector.git
 
 library
-  exposed-modules:     Data.Type.Natural, Data.Vector.Sized
+  exposed-modules:     Data.Vector.Sized
   build-depends:       base >= 2.0 && < 5
-               ,       singletons == 0.8.*
+               ,       singletons     == 0.8.*
+               ,       type-natural   >= 0.0.2.0
+               ,       monomorphic    == 0.0.*
