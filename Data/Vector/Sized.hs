@@ -5,7 +5,7 @@ module Data.Vector.Sized ( Vector (..), sLength, length, append, foldr
                          , foldl, singleton, zipWith, zipWithSame, toList, fromList
                          , unsafeFromList, fromList', unsafeFromList'
                          , all, splitAt, takeAtMost, splitAtMost
-                         , drop, take, map, head, tail) where
+                         , drop, take, map, head, tail, index) where
 import Control.Applicative
 import Data.Maybe
 import Data.Singletons       hiding (promote)
@@ -114,6 +114,10 @@ head (x :- _) = x
 
 tail :: Vector a (S n) -> Vector a n
 tail (_ :- xs) = xs
+
+index :: ((n :<<= m) ~ True) => SNat n -> Vector a (S m) -> a
+index SZ     (a :- _)  = a
+index (SS n) (_ :- (a :- as)) = index n (a :- as)
 
 instance Monomorphicable (Vector a) where
   type MonomorphicRep (Vector a) = [a]
