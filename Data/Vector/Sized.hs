@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds, GADTs, MultiParamTypeClasses, PolyKinds    #-}
 {-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TypeFamilies #-}
@@ -34,6 +35,8 @@ module Data.Vector.Sized ( -- * Vectors and indices
                            zip, zipSame, zipWith, zipWithSame, unzip
                          ) where
 import           Control.Applicative
+import           Control.DeepSeq
+import           Data.Hashable
 import           Data.Maybe
 import           Data.Type.Monomorphic
 import           Data.Type.Natural     hiding (promote)
@@ -416,3 +419,19 @@ unzip Nil = (Nil, Nil)
 unzip ((a, b) :- ps) =
   let (as, bs) = unzip ps
   in (a :- as, b :- bs)
+
+instance NFData a => NFData (Vector a n) where
+  rnf = rnfVector
+
+rnfVector :: NFData a => Vector a n -> ()
+rnfVector Nil = Nil `seq` ()
+rnfVector (x :- xs) = rnf x `seq` rnf xs `seq` ()
+
+vecHashWithSalt :: Hashable a => Int -> Vector a n -> Int
+vecHashWithSalt salt Nil = salt `combine` 0
+vecHashWithSalt salt xs  = foldl hashWithSalt salt xs
+
+instance Hashable a => Hashable (Vector a n) where
+  hash Nil = 0
+  hash (a :- as) = foldl hashWithSalt (hash a) as
+  hashWithSalt   = vecHashWithSalt
