@@ -5,8 +5,9 @@
 {-# LANGUAGE TypeOperators, NoImplicitPrelude                      #-}
 -- | Size-parameterized vector types and functions.
 module Data.Vector.Sized ( -- * Vectors and indices
-                           Vector (..)
-                         , Index(..), succIndex, indexToInt,
+                           Vector (..), Index,
+                           -- ** Re-exports
+                           module Data.Type.Ordinal,
                            -- * Conversion & Construction
                            replicate, replicate', singleton, uncons,
                            -- ** List
@@ -40,6 +41,7 @@ import           Data.Hashable
 import           Data.Maybe
 import           Data.Type.Monomorphic
 import           Data.Type.Natural     hiding (promote)
+import           Data.Type.Ordinal
 import qualified Prelude               as P
 import           Prelude               (Eq(..), Bool(..), Int, Show(..), (&&), Num(..)
                                        , (||), not, error, ($), (.), seq, fst, snd
@@ -53,6 +55,9 @@ data Vector (a :: *) (n :: Nat)  where
 
 infixr 5 :-
 
+-- | Type synonym for @Ordinal@.
+type Index = Ordinal
+
 -- | Monomorphic representation of 'Vector' @a n@ is @[a]@.
 instance Monomorphicable (Vector a) where
   type MonomorphicRep (Vector a) = [a]
@@ -61,20 +66,6 @@ instance Monomorphicable (Vector a) where
   promote (x:xs) =
     case promote xs of
       Monomorphic vec -> Monomorphic $ x :- vec
-
--- | Index type for list.
-data Index (n :: Nat) where
-  Index :: ((S m :<<= n) ~ True) => SNat m -> Index n
-
--- | Succ index number.
-succIndex :: Index n -> Index (S n)
-succIndex (Index n) = Index (sS n)
-
--- | Convert index into integer.
-indexToInt :: Index n -> Int
-indexToInt (Index n) = sNatToInt n
-
-deriving instance Show (Index n)
 
 deriving instance Show a => Show (Vector a n)
 instance (Eq a) => Eq (Vector a n) where
@@ -344,8 +335,8 @@ index (SS n) (_ :- (a :- as)) = index n (a :- as)
 
 -- | A 'Index' version of 'index'.
 sIndex :: Index n -> Vector a n -> a
-sIndex (Index SZ) (x :- _) = x
-sIndex (Index (SS n)) (_ :- xs) = sIndex (Index n) xs
+sIndex OZ (x :- _) = x
+sIndex (OS n) (_ :- xs) = sIndex n xs
 
 -- | The 'elemIndex' function returns the index (as 'Int') of the first element in the given list
 -- which is equal (by '==') to the query element, or Nothing if there is no such element.
@@ -378,14 +369,14 @@ sFindIndex p = listToMaybe . sFindIndices p
 -- | The 'findIndices' function extends 'findIndex', by returning the indices of all elements satisfying the predicate,
 --  in ascending order.
 findIndices :: (a -> Bool) -> Vector a n -> [Int]
-findIndices p = P.map indexToInt . sFindIndices p
+findIndices p = P.map ordToInt . sFindIndices p
 
 -- | 'Index' version of 'findIndices'.
 sFindIndices :: (a -> Bool) -> Vector a n -> [Index n]
 sFindIndices _ Nil = []
 sFindIndices p (x :- xs)
-            | p x       = Index sZero : P.map succIndex (sFindIndices p xs)
-            | otherwise =  P.map succIndex $ sFindIndices p xs
+  | p x       = OZ : P.map OS (sFindIndices p xs)
+  | otherwise = P.map OS $ sFindIndices p xs
 
 --------------------------------------------------
 -- Zipping vectors

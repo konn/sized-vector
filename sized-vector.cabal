@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                sized-vector
-version:             1.1.0.0
+version:             1.2.0.0
 synopsis:            Size-parameterized vector types and functions.
 description:         Size-parameterized vector types and functions using a data-type promotion.
 homepage:            https://github.com/konn/sized-vector
@@ -23,7 +23,7 @@ library
   exposed-modules:     Data.Vector.Sized
   build-depends:       base                     >= 2.0 && < 5
                ,       singletons               == 0.8.*
-               ,       type-natural             >= 0.0.2.0
+               ,       type-natural             >= 0.0.4.0
                ,       monomorphic              == 0.0.*
                ,       equational-reasoning     == 0.0.*
                ,       hashable                 == 1.1.*
