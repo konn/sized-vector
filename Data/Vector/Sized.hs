@@ -165,21 +165,23 @@ map f (x :- xs) = f x :- map f xs
 
 -- | 'reverse' @xs@ returns the elements of xs in reverse order. @xs@ must be finite.
 reverse :: forall a n. Vector a n -> Vector a n
-reverse xs0 = case plusZR (sLength xs0) of Refl -> go Nil xs0
+reverse xs0 = coerce (plusZR (sLength xs0)) $ go Nil xs0
   where
     go :: Vector a m -> Vector a k -> Vector a (k :+ m)
     go acc Nil = acc
-    go acc (x :- xs) = case plusSR (sLength xs) (sLength acc) of Refl -> go (x:- acc) xs
+    go acc (x :- xs) = coerce (symmetry $ plusSR (sLength xs) (sLength acc)) $ go (x:- acc) xs
          
 -- | The 'intersperse' function takes an element and a vector and
 -- \`intersperses\' that element between the elements of the vector.
 intersperse :: a -> Vector a n -> Vector a ((Two :* n) :- One)
 intersperse _ Nil = Nil
-intersperse a (x :- xs) = case plusSR (sLength xs) (sLength xs) of Refl -> x :- prependToAll a xs
+intersperse a (x :- xs) =
+  coerce (plusSR (sLength xs) (sLength xs)) $ x :- prependToAll a xs
 
 prependToAll :: a -> Vector a n -> Vector a (Two :* n)
 prependToAll _ Nil = Nil
-prependToAll a (x :- xs) = case plusSR (sLength xs) (sLength xs) of Refl -> x :- a :- prependToAll a xs
+prependToAll a (x :- xs) =
+  x :- (coerce (plusSR (sLength xs) (sLength xs)) $ a :- prependToAll a xs)
 
 -- | The 'transpose' function transposes the rows and columns of its argument.
 transpose :: SingRep n => Vector (Vector a n) m -> Vector (Vector a m) n
@@ -230,8 +232,7 @@ concat Nil = Nil
 concat (xs :- xss) =
   let n = sLength xs
       n0 = sLength xss
-  in case plusCommutative (n0 %* n) n of
-       Refl -> xs `append` concat xss
+  in coerce (symmetry $ plusCommutative (n0 %* n) n) $ xs `append` concat xss
 
 and, or :: Vector Bool m -> Bool
 -- | 'and' returns the conjunction of a Boolean vector.
