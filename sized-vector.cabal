@@ -23,7 +23,7 @@ library
   exposed-modules:     Data.Vector.Sized
   build-depends:       base                     >= 2.0          && < 5
                ,       singletons               == 0.8.*
-               ,       type-natural             == 0.1.*
+               ,       type-natural             >= 0.1          && < 0.2
                ,       constraints
                ,       monomorphic              == 0.0.*
                ,       equational-reasoning     >= 0.0.3        && < 0.1
