@@ -83,7 +83,7 @@ replicate SZ _ = Nil
 replicate (SS n) a = a :- replicate n a
 
 -- | 'replicate', with the length inferred.
-replicate' :: forall n a. SingRep n => a -> Vector a n
+replicate' :: forall n a. SingI n => a -> Vector a n
 replicate' = replicate (sing :: SNat n)
 
 -- | Construct a singleton vector.
@@ -107,11 +107,11 @@ unsafeFromList :: SNat n -> [a] -> Vector a n
 unsafeFromList len = fromMaybe (error "Length too short") . fromList len
 
 -- | Convert a list into vector, with length inferred.
-fromList' :: SingRep n => [a] -> Maybe (Vector a n)
+fromList' :: SingI n => [a] -> Maybe (Vector a n)
 fromList' = fromList sing
 
 -- | Unsafe version of 'unsafeFromList'.
-unsafeFromList' :: SingRep n => [a] -> Vector a n
+unsafeFromList' :: SingI n => [a] -> Vector a n
 unsafeFromList' = unsafeFromList sing
 
 -- | Convert a vector into a list.
@@ -191,7 +191,7 @@ prependToAll a (x :- xs) =
   x :- (coerce (plusSR (sLength xs) (sLength xs)) $ a :- prependToAll a xs)
 
 -- | The 'transpose' function transposes the rows and columns of its argument.
-transpose :: SingRep n => Vector (Vector a n) m -> Vector (Vector a m) n
+transpose :: SingI n => Vector (Vector a n) m -> Vector (Vector a m) n
 transpose Nil = replicate' Nil
 transpose (Nil :- _) = Nil
 transpose ((x :- xs) :- xss) =
