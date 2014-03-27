@@ -22,13 +22,17 @@ source-repository head
 library
   exposed-modules:     Data.Vector.Sized
   build-depends:       base                     >= 2.0          && < 5
-               ,       singletons               == 0.8.*
                ,       type-natural             >= 0.1          && < 0.3
                ,       constraints
                ,       monomorphic              == 0.0.*
-               ,       equational-reasoning     >= 0.0.3        && < 0.1
-               ,       hashable                 == 1.1.*
+               ,       equational-reasoning     >= 0.2.*        && < 0.3
+               ,       hashable                 >= 1.1          && < 1.3
                ,       deepseq                  == 1.3.*
+  if impl(ghc < 7.7)
+    build-depends:     singletons               == 0.8.*
+  if impl(ghc >= 7.7)
+    build-depends:     singletons               == 0.10.*
+
 
 Benchmark coercion-bench
   type:                 exitcode-stdio-1.0
