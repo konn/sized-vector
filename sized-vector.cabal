@@ -35,6 +35,7 @@ library
 
 
 Benchmark coercion-bench
+  buildable:            False
   type:                 exitcode-stdio-1.0
   main-is:              coercion.hs
   hs-source-dirs:       bench
