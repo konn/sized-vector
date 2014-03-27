@@ -33,18 +33,17 @@ library
   if impl(ghc >= 7.7)
     build-depends:     singletons               == 0.10.*
 
-
-Benchmark coercion-bench
-  buildable:            False
-  type:                 exitcode-stdio-1.0
-  main-is:              coercion.hs
-  hs-source-dirs:       bench
-  ghc-options:          -O2 -threaded -fcontext-stack=500
-  build-depends:        criterion
-               ,        statistics   >=0.10 && < 0.11
-               ,        progression
-               ,        sized-vector
-               ,        base
-               ,        type-natural
-               ,        parallel
-               ,        deepseq
+-- Benchmark coercion-bench
+--   buildable:            False
+--   type:                 exitcode-stdio-1.0
+--   main-is:              coercion.hs
+--   hs-source-dirs:       bench
+--   ghc-options:          -O2 -threaded -fcontext-stack=500
+--   build-depends:        criterion
+--                ,        statistics   >=0.10 && < 0.11
+--                ,        progression
+--                ,        sized-vector
+--                ,        base
+--                ,        type-natural
+--                ,        parallel
+--                ,        deepseq
