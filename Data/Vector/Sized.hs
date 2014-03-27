@@ -140,6 +140,13 @@ last (_ :- xs@(_ :- _)) = last xs
 tail :: Vector a (S n) -> Vector a n
 tail (_ :- xs) = xs
 
+-- | Extract the elements before the last of a non-empty list.
+init :: Vector a (S n) -> Vector a n
+init (a :- as) =
+  case as of
+    Nil    -> Nil
+    _ :- _ -> a :- init as
+
 -- | Test whether a @Vector@ is empty, though it's clear from the type parameter.
 null :: Vector a n -> Bool
 null Nil = True
