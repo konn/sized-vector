@@ -427,7 +427,7 @@ rnfVector Nil = Nil `seq` ()
 rnfVector (x :- xs) = rnf x `seq` rnf xs `seq` ()
 
 vecHashWithSalt :: Hashable a => Int -> Vector a n -> Int
-vecHashWithSalt salt Nil = salt `hashWithSalt` 0
+vecHashWithSalt salt Nil = salt `hashWithSalt` (0 :: Int)
 vecHashWithSalt salt xs  = foldl hashWithSalt salt xs
 
 instance Hashable a => Hashable (Vector a n) where
