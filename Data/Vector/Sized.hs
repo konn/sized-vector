@@ -434,3 +434,10 @@ instance Hashable a => Hashable (Vector a n) where
   hash Nil = 0
   hash (a :- as) = foldl hashWithSalt (hash a) as
   hashWithSalt   = vecHashWithSalt
+
+ordinalVecs :: SNat n -> Vector (Ordinal n) n
+ordinalVecs SZ      = Nil
+ordinalVecs (SS sn) = OZ :- map OS (ordinalVecs sn)
+
+ifoldl :: (a -> Index n -> b -> a) -> a -> Vector b n -> a
+ifoldl fun a0 vs = foldl (\a (b, c) -> fun a b c) a0 $ zipSame (ordinalVecs $ sLength vs) vs
