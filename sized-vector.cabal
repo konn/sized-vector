@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                sized-vector
-version:             1.4.0.0
+version:             1.4.1.0
 synopsis:            Size-parameterized vector types and functions.
 description:         Size-parameterized vector types and functions using a data-type promotion.
 homepage:            https://github.com/konn/sized-vector
@@ -31,7 +31,7 @@ library
   if impl(ghc < 7.7)
     build-depends:     singletons               == 0.8.*
   if impl(ghc >= 7.7)
-    build-depends:     singletons               == 0.10.*
+    build-depends:     singletons               == 1.0.*
 
 -- Benchmark coercion-bench
 --   buildable:            False
