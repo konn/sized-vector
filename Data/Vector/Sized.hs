@@ -68,6 +68,7 @@ instance Monomorphicable (Vector a) where
       Monomorphic vec -> Monomorphic $ x :- vec
 
 deriving instance Show a => Show (Vector a n)
+deriving instance P.Ord a => P.Ord (Vector a n)
 instance (Eq a) => Eq (Vector a n) where
   Nil == Nil = True
   (x :- xs) == (y :- ys) = x == y && xs == ys
