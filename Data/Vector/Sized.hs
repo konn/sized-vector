@@ -13,7 +13,7 @@ module Data.Vector.Sized ( -- * Vectors and indices
                            -- ** List
                            fromList, fromList', unsafeFromList, unsafeFromList', toList,
                            -- * Basic functions
-                           append, head, last, tail, null, length, sLength,
+                           append, head, last, tail, init, null, length, sLength,
                            -- * Vector transformations
                            map, reverse, intersperse, transpose,
                            -- * Reducing vectors (folds)
