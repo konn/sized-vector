@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds   #-}
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TypeFamilies #-}
-{-# LANGUAGE TypeOperators                                         #-}
+{-# LANGUAGE CPP, DataKinds, FlexibleContexts, FlexibleInstances, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds        #-}
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TypeFamilies      #-}
+{-# LANGUAGE TypeOperators                                              #-}
 -- | Size-parameterized vector types and functions.
 module Data.Vector.Sized ( -- * Vectors and indices
                            Vector (..), Index,
@@ -34,19 +34,33 @@ module Data.Vector.Sized ( -- * Vectors and indices
                            -- * Zipping vectors
                            zip, zipSame, zipWith, zipWithSame, unzip
                          ) where
-import           Control.Applicative
-import           Control.DeepSeq
-import           Data.Hashable
-import           Data.Maybe
-import           Data.Type.Monomorphic
-import           Data.Type.Natural     hiding (promote)
-import           Data.Type.Ordinal
-import           Prelude               (Bool (..), Eq (..), Int, Num (..),
-                                        Show (..), error, flip, fst, not,
-                                        otherwise, seq, snd, ($), (&&), (.),
-                                        (||))
+import           Control.Applicative   ((<$>))
+import           Control.DeepSeq       (NFData (..))
+import           Data.Hashable         (Hashable (..))
+import           Data.Maybe            (Maybe (..), fromMaybe, listToMaybe)
+import           Data.Singletons       (SingI, SingInstance (..), sing)
+import           Data.Singletons       (singInstance)
+import           Data.Type.Monomorphic (Monomorphic (..), Monomorphicable (..))
+import           Data.Type.Natural     ((:*), (:+), (:-), (:-:), (:<<=), Min)
+import           Data.Type.Natural     (Nat (..), One, SNat, Sing (..), Two)
+import           Data.Type.Natural     (plusCommutative, plusSR, plusZR)
+import           Data.Type.Natural     (sNatToInt, (%:*))
+import           Data.Type.Ordinal     (Ordinal (..), ordToInt)
+import           Prelude               (Bool (..), Eq (..), Int, Num (..))
+import           Prelude               (Show (..), error, flip, fst, otherwise)
+import           Prelude               (seq, snd, ($), (&&), (.), (||))
 import qualified Prelude               as P
-import           Proof.Equational      hiding (promote)
+import           Proof.Equational      (coerce, symmetry)
+
+#if !(defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708)
+import Data.Type.Natural (sS, sZ)
+#else
+sZ :: SNat Z
+sZ = SZ
+
+sS :: SNat n -> SNat (S n)
+sS = SS
+#endif
 
 -- | Fixed-length list.
 data Vector (a :: *) (n :: Nat)  where
@@ -124,7 +138,7 @@ toList = foldr (:) []
 --------------------------------------------------
 
 -- | Append two @Vector@s.
-append :: Vector a n -> Vector a m -> Vector a (n :+: m)
+append :: Vector a n -> Vector a m -> Vector a (n :+ m)
 append (x :- xs) ys = x :- append xs ys
 append Nil       ys = ys
 
@@ -236,12 +250,12 @@ foldr1 _ (x :- Nil) = x
 foldr1 f (x :- xs@(_ :- _)) = f x (foldr1 f xs)
 
 -- | The function 'concat' concatenates all vectors in th vector.
-concat :: Vector (Vector a n) m -> Vector a (m :*: n)
+concat :: Vector (Vector a n) m -> Vector a (m :* n)
 concat Nil = Nil
 concat (xs :- xss) =
   let n = sLength xs
       n0 = sLength xss
-  in coerce (symmetry $ plusCommutative (n0 %* n) n) $ xs `append` concat xss
+  in coerce (symmetry $ plusCommutative (n0 %:* n) n) $ xs `append` concat xss
 
 and, or :: Vector Bool m -> Bool
 -- | 'and' returns the conjunction of a Boolean vector.
