@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds, GADTs, MultiParamTypeClasses, PolyKinds    #-}
+{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds   #-}
 {-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TypeFamilies #-}
-{-# LANGUAGE TypeOperators, NoImplicitPrelude                      #-}
+{-# LANGUAGE TypeOperators                                         #-}
 -- | Size-parameterized vector types and functions.
 module Data.Vector.Sized ( -- * Vectors and indices
                            Vector (..), Index,
@@ -17,7 +16,7 @@ module Data.Vector.Sized ( -- * Vectors and indices
                            -- * Vector transformations
                            map, reverse, intersperse, transpose,
                            -- * Reducing vectors (folds)
-                           foldl, foldl', foldl1, foldl1', foldr, foldr1,
+                           foldl, foldl', foldl1, foldl1', foldr, foldr1, ifoldl,
                            -- ** Special folds
                            concat, and, or, any, all, sum, product, maximum, minimum,
                            -- * Subvectors
@@ -42,10 +41,11 @@ import           Data.Maybe
 import           Data.Type.Monomorphic
 import           Data.Type.Natural     hiding (promote)
 import           Data.Type.Ordinal
+import           Prelude               (Bool (..), Eq (..), Int, Num (..),
+                                        Show (..), error, flip, fst, not,
+                                        otherwise, seq, snd, ($), (&&), (.),
+                                        (||))
 import qualified Prelude               as P
-import           Prelude               (Eq(..), Bool(..), Int, Show(..), (&&), Num(..)
-                                       , (||), not, error, ($), (.), seq, fst, snd
-                                       , flip, otherwise)
 import           Proof.Equational      hiding (promote)
 
 -- | Fixed-length list.
@@ -142,6 +142,7 @@ tail :: Vector a (S n) -> Vector a n
 tail (_ :- xs) = xs
 
 -- | Extract the elements before the last of a non-empty list.
+-- Since 1.4.2.0
 init :: Vector a (S n) -> Vector a n
 init (a :- as) =
   case as of
@@ -178,7 +179,7 @@ reverse xs0 = coerce (plusZR (sLength xs0)) $ go Nil xs0
     go :: Vector a m -> Vector a k -> Vector a (k :+ m)
     go acc Nil = acc
     go acc (x :- xs) = coerce (symmetry $ plusSR (sLength xs) (sLength acc)) $ go (x:- acc) xs
-         
+
 -- | The 'intersperse' function takes an element and a vector and
 -- \`intersperses\' that element between the elements of the vector.
 intersperse :: a -> Vector a n -> Vector a ((Two :* n) :- One)
@@ -250,9 +251,9 @@ and = foldr (&&) True
 or  = foldr (||) False
 
 any, all :: (a -> Bool) -> Vector a n -> Bool
--- | Applied to a predicate and a list, 'any' determines if any element of the vector satisfies the predicate. 
+-- | Applied to a predicate and a list, 'any' determines if any element of the vector satisfies the predicate.
 any p = or . map p
--- | Applied to a predicate and a list, 'all' determines if all element of the vector satisfies the predicate. 
+-- | Applied to a predicate and a list, 'all' determines if all element of the vector satisfies the predicate.
 all p = and . map p
 
 sum, product :: P.Num a => Vector a n -> a
@@ -440,5 +441,7 @@ ordinalVecs :: SNat n -> Vector (Ordinal n) n
 ordinalVecs SZ      = Nil
 ordinalVecs (SS sn) = OZ :- map OS (ordinalVecs sn)
 
+-- | Indexed version of 'foldl'.
+-- Since 1.4.2.0
 ifoldl :: (a -> Index n -> b -> a) -> a -> Vector b n -> a
 ifoldl fun a0 vs = foldl (\a (b, c) -> fun a b c) a0 $ zipSame (ordinalVecs $ sLength vs) vs
