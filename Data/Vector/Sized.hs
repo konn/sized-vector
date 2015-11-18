@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, DataKinds, FlexibleContexts, FlexibleInstances, GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds        #-}
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TypeFamilies      #-}
-{-# LANGUAGE TypeOperators                                              #-}
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies, TypeOperators                                #-}
 -- | Size-parameterized vector types and functions.
 module Data.Vector.Sized ( -- * Vectors and indices
                            Vector (..), Index,
@@ -32,25 +32,33 @@ module Data.Vector.Sized ( -- * Vectors and indices
                          , findIndex, sFindIndex, findIndices, sFindIndices
                          , elemIndices, sElemIndices,
                            -- * Zipping vectors
-                           zip, zipSame, zipWith, zipWithSame, unzip
+                           zip, zipSame, zipWith, zipWithSame, unzip,
+                           -- * Macros
+                           sized, sized'
                          ) where
-import           Control.Applicative   ((<$>))
-import           Control.DeepSeq       (NFData (..))
-import           Data.Hashable         (Hashable (..))
-import           Data.Maybe            (Maybe (..), fromMaybe, listToMaybe)
-import           Data.Singletons       (SingI, SingInstance (..), sing)
-import           Data.Singletons       (singInstance)
-import           Data.Type.Monomorphic (Monomorphic (..), Monomorphicable (..))
-import           Data.Type.Natural     ((:*), (:+), (:-), (:-:), (:<<=), Min)
-import           Data.Type.Natural     (Nat (..), One, SNat, Sing (..), Two)
-import           Data.Type.Natural     (plusCommutative, plusSR, plusZR)
-import           Data.Type.Natural     (sNatToInt, (%:*))
-import           Data.Type.Ordinal     (Ordinal (..), ordToInt)
-import           Prelude               (Bool (..), Eq (..), Int, Num (..))
-import           Prelude               (Show (..), error, flip, fst, otherwise)
-import           Prelude               (seq, snd, ($), (&&), (.), (||))
-import qualified Prelude               as P
-import           Proof.Equational      (coerce, symmetry)
+import           Control.Applicative        ((<$>))
+import           Control.DeepSeq            (NFData (..))
+import           Data.Hashable              (Hashable (..))
+import           Data.Maybe                 (Maybe (..), fromMaybe, listToMaybe)
+import           Data.Singletons            (SingI, SingInstance (..), sing)
+import           Data.Singletons            (singInstance)
+import           Data.Type.Monomorphic      (Monomorphic (..),
+                                             Monomorphicable (..))
+import           Data.Type.Natural          ((:*), (:+), (:-), (:-:), (:<<=),
+                                             Min)
+import           Data.Type.Natural          (Nat (..), One, SNat, Sing (..),
+                                             Two)
+import           Data.Type.Natural          (plusCommutative, plusSR, plusZR)
+import           Data.Type.Natural          (sNatToInt, (%:*))
+import           Data.Type.Ordinal          (Ordinal (..), ordToInt)
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax (Lift (lift))
+import           Prelude                    (Bool (..), Eq (..), Int, Num (..))
+import           Prelude                    (Show (..), error, flip, fst,
+                                             otherwise)
+import           Prelude                    (seq, snd, ($), (&&), (.), (||))
+import qualified Prelude                    as P
+import           Proof.Equational           (coerce, symmetry)
 
 #if !(defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708)
 import Data.Type.Natural (sS, sZ)
@@ -459,3 +467,14 @@ ordinalVecs (SS sn) = OZ :- map OS (ordinalVecs sn)
 -- Since 1.4.2.0
 ifoldl :: (a -> Index n -> b -> a) -> a -> Vector b n -> a
 ifoldl fun a0 vs = foldl (\a (b, c) -> fun a b c) a0 $ zipSame (ordinalVecs $ sLength vs) vs
+
+-- | Utility Template Haskell macro to @lift@ plain lists upto sized vectors.
+--- Since 1.4.3.0
+sized :: Lift t => [t] -> ExpQ
+sized = sized' . P.map lift
+
+-- | Similar to 'lift'', but lifts the list of 'ExpQ' instead.
+--   This function is useful to avoid the stage restriction.
+-- Since 1.4.3.0
+sized' :: [ExpQ] -> ExpQ
+sized' = P.foldr (\a b -> [| $a :- $b |]) [| Nil |]
