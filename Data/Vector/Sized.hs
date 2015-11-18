@@ -70,6 +70,9 @@ sS :: SNat n -> SNat (S n)
 sS = SS
 #endif
 
+-- $setup
+-- >>> :set -XTemplateHaskell
+
 -- | Fixed-length list.
 data Vector (a :: *) (n :: Nat)  where
   Nil  :: Vector a Z
@@ -164,6 +167,7 @@ tail :: Vector a (S n) -> Vector a n
 tail (_ :- xs) = xs
 
 -- | Extract the elements before the last of a non-empty list.
+--
 -- Since 1.4.2.0
 init :: Vector a (S n) -> Vector a n
 init (a :- as) =
@@ -279,11 +283,15 @@ any p = or . map p
 all p = and . map p
 
 sum, product :: P.Num a => Vector a n -> a
+-- | 'sum' takes the sum of the numbers contained in a sized vector.
 sum = foldr (+) 0
+-- | 'product' takes the product of the numbers contained in a sized vector.
 product = foldr (*) 1
 
 maximum, minimum :: P.Ord a => Vector a (S n) -> a
+-- | Maximum element of a (statically) non-empty vector.
 maximum = foldr1 P.max
+-- | Minimum element of a (statically) non-empty vector.
 minimum = foldr1 P.min
 
 --------------------------------------------------
@@ -339,9 +347,13 @@ stripPrefix (x :- xs) (y :- ys)
 --------------------------------------------------
 
 elem, notElem :: Eq a => a -> Vector a n -> Bool
+-- | Test if the element occurs in the vector?
 elem a = any (== a)
+-- | Negation of 'elem'.
 notElem a = all (/= a)
 
+-- | Find the first element which satisfies the given predicate.
+--   If there are no element satisfying the predicate, returns 'Nothing'.
 find :: (a -> Bool) -> Vector a n -> Maybe a
 find _ Nil = Nothing
 find p (x :- xs)
@@ -464,17 +476,26 @@ ordinalVecs SZ      = Nil
 ordinalVecs (SS sn) = OZ :- map OS (ordinalVecs sn)
 
 -- | Indexed version of 'foldl'.
+--
 -- Since 1.4.2.0
 ifoldl :: (a -> Index n -> b -> a) -> a -> Vector b n -> a
 ifoldl fun a0 vs = foldl (\a (b, c) -> fun a b c) a0 $ zipSame (ordinalVecs $ sLength vs) vs
 
 -- | Utility Template Haskell macro to @lift@ plain lists upto sized vectors.
---- Since 1.4.3.0
+--
+-- Since 1.4.3.0
+--
+-- >>> $(sized [1,2,3 :: Int])
+-- 1 :- (2 :- (3 :- Nil))
 sized :: Lift t => [t] -> ExpQ
 sized = sized' . P.map lift
 
 -- | Similar to 'lift'', but lifts the list of 'ExpQ' instead.
 --   This function is useful to avoid the stage restriction.
+--
 -- Since 1.4.3.0
+--
+-- >>> let a = "foo" in $(sized' [[|a|],[|"bar"|],[|"baz"|]])
+-- "foo" :- ("bar" :- ("baz" :- Nil))
 sized' :: [ExpQ] -> ExpQ
 sized' = P.foldr (\a b -> [| $a :- $b |]) [| Nil |]
