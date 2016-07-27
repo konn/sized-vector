@@ -42,13 +42,14 @@ import           Data.Hashable              (Hashable (..))
 import           Data.Maybe                 (Maybe (..), fromMaybe, listToMaybe)
 import           Data.Singletons            (SingI, SingInstance (..), sing)
 import           Data.Singletons            (singInstance)
+import           Data.Type.Equality         (sym)
 import           Data.Type.Monomorphic      (Monomorphic (..),
                                              Monomorphicable (..))
 import           Data.Type.Natural          ((:*), (:+), (:-), (:-:), (:<<=),
                                              Min)
 import           Data.Type.Natural          (Nat (..), One, SNat, Sing (..),
                                              Two)
-import           Data.Type.Natural          (plusCommutative, plusSR, plusZR)
+import           Data.Type.Natural          (plusComm, plusSuccR, plusZR)
 import           Data.Type.Natural          (sNatToInt, (%:*))
 import           Data.Type.Ordinal          (Ordinal (..), ordToInt)
 import           Language.Haskell.TH
@@ -204,19 +205,19 @@ reverse xs0 = coerce (plusZR (sLength xs0)) $ go Nil xs0
   where
     go :: Vector a m -> Vector a k -> Vector a (k :+ m)
     go acc Nil = acc
-    go acc (x :- xs) = coerce (symmetry $ plusSR (sLength xs) (sLength acc)) $ go (x:- acc) xs
+    go acc (x :- xs) = coerce (plusSuccR (sLength xs) (sLength acc)) $ go (x:- acc) xs
 
 -- | The 'intersperse' function takes an element and a vector and
 -- \`intersperses\' that element between the elements of the vector.
 intersperse :: a -> Vector a n -> Vector a ((Two :* n) :- One)
 intersperse _ Nil = Nil
 intersperse a (x :- xs) =
-  coerce (plusSR (sLength xs) (sLength xs)) $ x :- prependToAll a xs
+  coerce (sym $ plusSuccR (sLength xs) (sLength xs)) $ x :- prependToAll a xs
 
 prependToAll :: a -> Vector a n -> Vector a (Two :* n)
 prependToAll _ Nil = Nil
 prependToAll a (x :- xs) =
-  x :- (coerce (plusSR (sLength xs) (sLength xs)) $ a :- prependToAll a xs)
+  x :- (coerce (sym $ plusSuccR (sLength xs) (sLength xs)) $ a :- prependToAll a xs)
 
 -- | The 'transpose' function transposes the rows and columns of its argument.
 transpose :: SingI n => Vector (Vector a n) m -> Vector (Vector a m) n
@@ -267,7 +268,7 @@ concat Nil = Nil
 concat (xs :- xss) =
   let n = sLength xs
       n0 = sLength xss
-  in coerce (symmetry $ plusCommutative (n0 %:* n) n) $ xs `append` concat xss
+  in coerce (plusComm n (n0 %:* n)) $ xs `append` concat xss
 
 and, or :: Vector Bool m -> Bool
 -- | 'and' returns the conjunction of a Boolean vector.
