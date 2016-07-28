@@ -15,6 +15,7 @@ module Data.Vector.Sized ( -- * Vectors and indices
                            append, head, last, tail, init, null, length, sLength,
                            -- * Vector transformations
                            map, reverse, intersperse, transpose,
+                           traverse, mapM,
                            -- * Reducing vectors (folds)
                            foldl, foldl', foldl1, foldl1', foldr, foldr1, ifoldl,
                            -- ** Special folds
@@ -70,8 +71,10 @@ data Vector (a :: *) (n :: Nat)  where
   Nil  :: Vector a 'Z
   (:-) :: a -> Vector a n -> Vector a ('S n)
 
+-- | Since 1.4.4.0
 type instance Element (Vector a n) = a
 
+-- | Since 1.4.4.0
 instance MonoFoldable (Vector a n) where
   ofoldMap _ Nil = P.mempty
   ofoldMap f (x :- xs) = f x `P.mappend` ofoldMap f xs
@@ -92,6 +95,18 @@ instance MonoFoldable (Vector a n) where
   {-# INLINE ofoldl1Ex' #-}
 
 infixr 5 :-
+
+-- | Since 1.4.4.0
+instance MonoFunctor (Vector a n) where
+  omap = map
+  {-# INLINE omap #-}
+
+-- | Since 1.4.4.0
+instance MonoTraversable (Vector a n) where
+  {-# INLINE otraverse #-}
+  {-# INLINE omapM #-}
+  otraverse = traverse
+  omapM = mapM
 
 -- | Type synonym for @Ordinal@.
 type Index = Ordinal
@@ -210,6 +225,17 @@ sLength (_ :- xs) = SS $ sLength xs
 map :: (a -> b) -> Vector a n -> Vector b n
 map _ Nil       = Nil
 map f (x :- xs) = f x :- map f xs
+
+-- | Since 1.4.4.0
+mapM :: P.Monad m => (a -> m b) -> Vector a n -> m (Vector b n)
+mapM = traverse
+{-# INLINE mapM #-}
+
+-- | Since 1.4.4.0
+traverse :: P.Applicative f => (a -> f b) -> Vector a n -> f (Vector b n)
+traverse _ Nil = P.pure Nil
+traverse f (x :- xs) = (:-) <$> f x P.<*> traverse f xs
+{-# INLINE traverse #-}
 
 -- | 'reverse' @xs@ returns the elements of xs in reverse order. @xs@ must be finite.
 reverse :: forall a n. Vector a n -> Vector a n
@@ -512,3 +538,5 @@ sized = sized' . P.map lift
 -- "foo" :- ("bar" :- ("baz" :- Nil))
 sized' :: [ExpQ] -> ExpQ
 sized' = P.foldr (\a b -> [| $a :- $b |]) [| Nil |]
+
+
