@@ -1,7 +1,7 @@
-{-# LANGUAGE CPP, DataKinds, FlexibleContexts, FlexibleInstances, GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds        #-}
-{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies, TypeOperators                                #-}
+{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs    #-}
+{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, PolyKinds      #-}
+{-# LANGUAGE ScopedTypeVariables, StandaloneDeriving, TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies, TypeOperators                              #-}
 -- | Size-parameterized vector types and functions.
 module Data.Vector.Sized ( -- * Vectors and indices
                            Vector (..), Index,
@@ -40,6 +40,7 @@ import           Control.Applicative        ((<$>))
 import           Control.DeepSeq            (NFData (..))
 import           Data.Hashable              (Hashable (..))
 import           Data.Maybe                 (Maybe (..), fromMaybe, listToMaybe)
+import           Data.MonoTraversable
 import           Data.Singletons            (SingI, SingInstance (..), sing)
 import           Data.Singletons            (singInstance)
 import           Data.Type.Equality         (sym)
@@ -59,25 +60,36 @@ import           Prelude                    (Show (..), error, flip, fst,
                                              otherwise)
 import           Prelude                    (seq, snd, ($), (&&), (.), (||))
 import qualified Prelude                    as P
-import           Proof.Equational           (coerce, symmetry)
-
-#if !(defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708)
-import Data.Type.Natural (sS, sZ)
-#else
-sZ :: SNat Z
-sZ = SZ
-
-sS :: SNat n -> SNat (S n)
-sS = SS
-#endif
+import           Proof.Equational           (coerce)
 
 -- $setup
 -- >>> :set -XTemplateHaskell
 
 -- | Fixed-length list.
 data Vector (a :: *) (n :: Nat)  where
-  Nil  :: Vector a Z
-  (:-) :: a -> Vector a n -> Vector a (S n)
+  Nil  :: Vector a 'Z
+  (:-) :: a -> Vector a n -> Vector a ('S n)
+
+type instance Element (Vector a n) = a
+
+instance MonoFoldable (Vector a n) where
+  ofoldMap _ Nil = P.mempty
+  ofoldMap f (x :- xs) = f x `P.mappend` ofoldMap f xs
+  {-# INLINE ofoldMap #-}
+
+  ofoldr = foldr
+  {-# INLINE ofoldr #-}
+
+  ofoldl' = foldl'
+  {-# INLINE ofoldl' #-}
+
+  ofoldr1Ex _ Nil = error "ofoldr1Ex for Vector a 0"
+  ofoldr1Ex f xs@(_ :- _) = foldr1 f xs
+  {-# INLINE ofoldr1Ex #-}
+
+  ofoldl1Ex' _ Nil = error "ofoldr1Ex for Vector a 0"
+  ofoldl1Ex' f xs@(_ :- _) = foldl1 f xs
+  {-# INLINE ofoldl1Ex' #-}
 
 infixr 5 :-
 
@@ -114,11 +126,11 @@ replicate' :: forall n a. SingI n => a -> Vector a n
 replicate' = replicate (sing :: SNat n)
 
 -- | Construct a singleton vector.
-singleton :: a -> Vector a (S Z)
+singleton :: a -> Vector a ('S 'Z)
 singleton = (:- Nil)
 
 -- | Uncons the non-empty list.
-uncons :: Vector a (S n) -> (a, Vector a n)
+uncons :: Vector a ('S n) -> (a, Vector a n)
 uncons (a :- as) = (a, as)
 
 -- | Convert a list into a vector.
@@ -155,22 +167,22 @@ append (x :- xs) ys = x :- append xs ys
 append Nil       ys = ys
 
 -- | Extract the first element of a non-empty vector.
-head :: Vector a (S n) -> a
+head :: Vector a ('S n) -> a
 head (x :- _) = x
 
 -- | Extract the last element of a non-empty vector.
-last :: Vector a (S n) -> a
+last :: Vector a ('S n) -> a
 last (x :- Nil) = x
 last (_ :- xs@(_ :- _)) = last xs
 
 -- | Extract the elements after the head of a non-empty list.
-tail :: Vector a (S n) -> Vector a n
+tail :: Vector a ('S n) -> Vector a n
 tail (_ :- xs) = xs
 
 -- | Extract the elements before the last of a non-empty list.
 --
 -- Since 1.4.2.0
-init :: Vector a (S n) -> Vector a n
+init :: Vector a ('S n) -> Vector a n
 init (a :- as) =
   case as of
     Nil    -> Nil
@@ -187,8 +199,8 @@ length = sNatToInt . sLength
 
 -- | 'sLength' returns the length of a finite list as a 'SNat' @n@.
 sLength :: Vector a n -> SNat n
-sLength Nil       = sZ
-sLength (_ :- xs) = sS $ sLength xs
+sLength Nil       = SZ
+sLength (_ :- xs) = SS $ sLength xs
 
 --------------------------------------------------
 -- Vector transformations
@@ -245,11 +257,11 @@ foldl' f z0 xs0 = lgo z0 xs0
     lgo z (x :- xs) = let z' = f z x in z' `seq` lgo z' xs
 
 -- | Left fold for non-empty vector.
-foldl1 :: (a -> a -> a) -> Vector a (S n) -> a
+foldl1 :: (a -> a -> a) -> Vector a ('S n) -> a
 foldl1 f (a :- as) = foldl f a as
 
 -- | A strict version of 'foldl1'.
-foldl1' :: (a -> a -> a) -> Vector a (S n) -> a
+foldl1' :: (a -> a -> a) -> Vector a ('S n) -> a
 foldl1' f (a :- as) = foldl' f a as
 
 -- | Right fold.
@@ -258,7 +270,7 @@ foldr _ b Nil       = b
 foldr f a (x :- xs) = f x (foldr f a xs)
 
 -- | Right fold for non-empty vector.
-foldr1 :: (a -> a -> a) -> Vector a (S n) -> a
+foldr1 :: (a -> a -> a) -> Vector a ('S n) -> a
 foldr1 _ (x :- Nil) = x
 foldr1 f (x :- xs@(_ :- _)) = f x (foldr1 f xs)
 
@@ -289,7 +301,7 @@ sum = foldr (+) 0
 -- | 'product' takes the product of the numbers contained in a sized vector.
 product = foldr (*) 1
 
-maximum, minimum :: P.Ord a => Vector a (S n) -> a
+maximum, minimum :: P.Ord a => Vector a ('S n) -> a
 -- | Maximum element of a (statically) non-empty vector.
 maximum = foldr1 P.max
 -- | Minimum element of a (statically) non-empty vector.
@@ -301,7 +313,7 @@ minimum = foldr1 P.min
 
 -- | 'take' @n xs@ returns the prefix of @xs@ of length @n@,
 -- with @n@ less than or equal to the length of @xs@.
-take :: (n :<<= m) ~ True => SNat n -> Vector a m -> Vector a n
+take :: (n :<<= m) ~ 'True => SNat n -> Vector a m -> Vector a n
 take SZ     _         = Nil
 take (SS n) (x :- xs) = x :- take n xs
 take _ _ = error "imposible!"
@@ -312,12 +324,12 @@ takeAtMost = (fst .) . splitAtMost
 
 -- | 'drop' @n xs@ returns the suffix of @xs@ after the first @n@ elements,
 -- with @n@ less than or equal to the length of @xs@.
-drop :: (n :<<= m) ~ True => SNat n -> Vector a m -> Vector a (m :-: n)
+drop :: (n :<<= m) ~ 'True => SNat n -> Vector a m -> Vector a (m :-: n)
 drop n = snd . splitAt n
 
 -- | 'splitAt' @n xs@ returns a tuple where first element is @xs@ prefix of length @n@
 -- and second element is the remainder of the list. @n@ should be less than or equal to the length of @xs@.
-splitAt :: (n :<<= m) ~ True => SNat n -> Vector a m -> (Vector a n, Vector a (m :-: n))
+splitAt :: (n :<<= m) ~ 'True => SNat n -> Vector a m -> (Vector a n, Vector a (m :-: n))
 splitAt SZ     xs        = (Nil, xs)
 splitAt (SS n) (x :- xs) =
   case splitAt n xs of
@@ -366,7 +378,7 @@ find p (x :- xs)
 --------------------------------------------------
 
 -- | List index (subscript) operator, starting from @sZero@.
-(!!) ::  ((n :<<= m) ~ True) => Vector a (S m) -> SNat n -> a
+(!!) ::  ((n :<<= m) ~ 'True) => Vector a ('S m) -> SNat n -> a
 (!!) = flip index
 
 -- | A 'Index' version of '!!'.
@@ -374,7 +386,7 @@ find p (x :- xs)
 (%!!) = flip sIndex
 
 -- | Flipped version of '!!'.
-index :: ((n :<<= m) ~ True) => SNat n -> Vector a (S m) -> a
+index :: ((n :<<= m) ~ 'True) => SNat n -> Vector a ('S m) -> a
 index SZ     (a :- _)  = a
 index (SS n) (_ :- (a :- as)) = index n (a :- as)
 

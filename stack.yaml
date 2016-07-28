@@ -1,26 +1,15 @@
 resolver: lts-6.9
 packages:
 - '.'
-- location:
-    git: https://github.com/konn/equational-reasoning-in-haskell.git
-    commit: b0c47234b4f02b9dc1ccc15c9b13054f2625b7e3
-  extra-dep: true
-
-- location:
-    git: https://github.com/konn/type-natural.git
-    commit: c5f2fa4639e4dfaf4ecd70adb3da2996f69d5dae
-  extra-dep: true
-
-- location:
-    git: https://github.com/konn/ghc-typelits-presburger.git
-    commit: 903a046c049d53d92fc4a54ae1cf5e8cb668073e
-  extra-dep: true
 
 extra-deps:
 - monomorphic-0.0.3.3
 - singletons-2.1
 - ghc-typelits-natnormalise-0.4.6
 - th-desugar-1.6
+- type-natural-0.4.1.0
+- equational-reasoning-0.4.0.0
+- ghc-typelits-presburger-0.1.0.0
 
 flags: {}
 
